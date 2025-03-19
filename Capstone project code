@@ -1,0 +1,41 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+#define IR_SENSOR_PIN 2  // IR sensor connected to digital pin 2
+
+volatile int pulse_count = 0;
+unsigned long last_time = 0;
+float rpm = 0;
+
+// Initialize LCD with I2C address 0x27 (change to 0x3F if needed)
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+void IR_interrupt() {
+    pulse_count++;  // Increment pulse count on every detection
+}
+
+void setup() {
+    lcd.init();
+    lcd.backlight();
+    lcd.setCursor(0, 0);
+    lcd.print("Tachometer Ready");
+
+    pinMode(IR_SENSOR_PIN, INPUT);
+    attachInterrupt(digitalPinToInterrupt(IR_SENSOR_PIN), IR_interrupt, FALLING);
+}
+
+void loop() {
+    unsigned long current_time = millis();
+
+    if (current_time - last_time >= 1000) { // Calculate RPM every second
+        rpm = (pulse_count * 60.0) / 1.0; // Convert pulses to RPM
+        pulse_count = 0;
+        last_time = current_time;
+
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("RPM: ");
+        lcd.setCursor(5, 0);
+        lcd.print(rpm);
+    }
+}
